@@ -1,0 +1,2 @@
+rc4_enc.c:11:6:P_RC4	552	static
+rc4_enc.c:47:6:P_RC4_ext	552	static

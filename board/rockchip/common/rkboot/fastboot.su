@@ -1,0 +1,17 @@
+fastboot.c:333:13:board_fbt_run_recovery	16	static
+fastboot.c:278:13:board_fbt_request_start_fastboot	520	static
+fastboot.c:80:6:board_fbt_set_reboot_type	8	static
+fastboot.c:109:22:board_fbt_get_reboot_type	16	static
+fastboot.c:187:5:board_fbt_key_pressed	24	static
+fastboot.c:242:6:board_fbt_finalize_bootargs	24	static
+fastboot.c:255:6:board_fbt_boot_failed	24	static
+fastboot.c:294:5:board_fbt_oem	0	static
+fastboot.c:303:5:board_fbt_handle_erase	0	static
+fastboot.c:308:5:board_fbt_handle_flash	0	static
+fastboot.c:314:5:board_fbt_handle_download	0	static
+fastboot.c:322:5:board_fbt_load_partition_table	0	static
+fastboot.c:327:25:board_fbt_get_partition	0	static
+fastboot.c:345:6:board_fbt_run_recovery_wipe_data	1096	static
+fastboot.c:388:6:get_exit_uboot_charge_level	8	static
+fastboot.c:435:6:board_fbt_exit_uboot_charge	48	static
+fastboot.c:473:6:board_fbt_preboot	24	static

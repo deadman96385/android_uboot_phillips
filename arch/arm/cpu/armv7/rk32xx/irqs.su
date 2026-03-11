@@ -1,0 +1,14 @@
+irqs-gic.c:154:12:gic_handler_enable	8	static
+irqs-gic.c:175:12:gic_handler_disable	0	static
+irqs-gic.c:194:12:gic_set_irq_type	0	static
+irqs-gpio.c:61:12:gpio_irq_set_type	16	static
+irqs-gpio.c:147:12:gpio_irq_disable	8	static
+irqs-gpio.c:126:12:gpio_irq_enable	8	static
+irqs-gpio.c:168:13:gpio_irq_handler	40	static
+irqs.c:118:5:irq_handler_enable	8	static
+irqs.c:135:5:irq_handler_disable	8	static
+irqs.c:156:5:irq_set_irq_type	8	static
+irqs.c:173:6:irq_install_handler	0	static
+irqs.c:186:6:irq_uninstall_handler	0	static
+irqs.c:195:6:do_irq	16	static
+irqs.c:201:5:arch_interrupt_init	16	static

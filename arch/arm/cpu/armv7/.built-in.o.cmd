@@ -1,0 +1,1 @@
+cmd_arch/arm/cpu/armv7/built-in.o :=  /buildpd/10BDL4551T_SZ/u-boot/../prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-ld.bfd     -r -o arch/arm/cpu/armv7/built-in.o arch/arm/cpu/armv7/cache_v7.o arch/arm/cpu/armv7/cpu.o arch/arm/cpu/armv7/syslib.o arch/arm/cpu/armv7/suspend.o arch/arm/cpu/armv7/sleep.o 

@@ -1,0 +1,4 @@
+fg_cw201x.c:221:12:cw201x_check_battery	16	static
+fg_cw201x.c:111:12:0	32	static
+fg_cw201x.c:202:12:cw201x_update_battery	32	static
+fg_cw201x.c:249:5:fg_cw201x_init	48	static

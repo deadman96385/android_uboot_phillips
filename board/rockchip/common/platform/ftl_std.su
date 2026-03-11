@@ -1,0 +1,3 @@
+ftl_std.c:15:8:ftl_memset	0	static
+ftl_std.c:24:7:ftl_memcpy	12	static
+ftl_std.c:45:5:ftl_memcmp	0	static

@@ -1,0 +1,3 @@
+usbdev_bc.c:64:12:grf_uoc_get_field	0	static
+usbdev_bc.c:56:13:grf_uoc_set_field	0	static
+usbdev_bc.c:476:5:dwc_otg_check_dpdm	48	static

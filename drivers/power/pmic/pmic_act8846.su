@@ -1,0 +1,5 @@
+pmic_act8846.c:115:12:act8846_set_bits	40	static
+pmic_act8846.c:137:5:pmic_act8846_charger_setting	8	static
+pmic_act8846.c:169:5:act8846_regulator_set	24	static
+pmic_act8846.c:277:5:pmic_act8846_init	64	static
+pmic_act8846.c:297:6:pmic_act8846_shut_down	8	static

@@ -1,0 +1,2 @@
+pwm_bl.c:85:5:rk_pwm_get_id_by_phys	0	static
+pwm_bl.c:189:5:rk_pwm_bl_config	96	static

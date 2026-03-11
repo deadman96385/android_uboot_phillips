@@ -1,0 +1,8 @@
+SecureBoot.c:40:8:SecureBootCheck	16	static
+SecureBoot.c:60:6:SecureBootUnlock	16	static
+SecureBoot.c:71:6:SecureBootUnlockCheck	0	static
+SecureBoot.c:77:6:SecureBootLockLoader	0	static
+SecureBoot.c:114:8:SecureBootSetSysData2Kernel	592	static
+SecureBoot.c:140:8:SecureBootSecureDisable	0	static
+SecureBoot.c:178:8:SecureBootImageCheck	8	static
+SecureBoot.c:184:6:SecureBootSecureState2Kernel	8	static

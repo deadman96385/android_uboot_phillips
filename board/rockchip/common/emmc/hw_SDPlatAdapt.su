@@ -1,0 +1,13 @@
+hw_SDPlatAdapt.c:20:6:SDPAM_FlushCache	0	static
+hw_SDPlatAdapt.c:36:6:SDPAM_CleanCache	0	static
+hw_SDPlatAdapt.c:42:6:SDPAM_InvalidateCache	0	static
+hw_SDPlatAdapt.c:57:8:SDPAM_GetAHBFreq	0	static
+hw_SDPlatAdapt.c:71:6:SDPAM_SDCClkEnable	0	static
+hw_SDPlatAdapt.c:84:6:SDPAM_SDCReset	0	static
+hw_SDPlatAdapt.c:103:6:SDPAM_SetMmcClkDiv	0	static
+hw_SDPlatAdapt.c:122:7:SDPAM_SetTuning	0	static
+hw_SDPlatAdapt.c:142:8:SDPAM_SetSrcFreq	8	static
+hw_SDPlatAdapt.c:309:8:SDPAM_INTCRegISR	8	static
+hw_SDPlatAdapt.c:329:8:SDPAM_INTCEnableIRQ	8	static
+hw_SDPlatAdapt.c:354:8:SDPAM_IOMUX_SetSDPort	0	static
+hw_SDPlatAdapt.c:369:6:SDPAM_ControlPower	0	static

@@ -1,0 +1,3 @@
+env_rk.c:36:5:env_init	0	static
+env_rk.c:66:5:saveenv	48	static
+env_rk.c:137:6:env_relocate_spec	32	static

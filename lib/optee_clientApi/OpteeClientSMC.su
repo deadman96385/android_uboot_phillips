@@ -1,0 +1,7 @@
+OpteeClientSMC.c:282:6:SetTeeSmc32Params	12	static
+OpteeClientSMC.c:355:13:OpteeSmcCall	40	static
+OpteeClientSMC.c:24:6:tee_uuid_to_octets	0	static
+OpteeClientSMC.c:44:13:TEEC_SMC_OpenSession	40	static
+OpteeClientSMC.c:162:13:TEEC_SMC_CloseSession	16	static
+OpteeClientSMC.c:207:13:TEEC_SMC_InvokeCommand	32	static
+OpteeClientSMC.c:267:13:TEEC_SMC_RequestCancellation	0	static

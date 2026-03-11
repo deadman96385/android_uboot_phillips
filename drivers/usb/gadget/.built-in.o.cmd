@@ -1,0 +1,1 @@
+cmd_drivers/usb/gadget/built-in.o :=  /buildpd/10BDL4551T_SZ/u-boot/../prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-ld.bfd     -r -o drivers/usb/gadget/built-in.o drivers/usb/gadget/core.o drivers/usb/gadget/ep0.o drivers/usb/gadget/dwc_otg_udc.o 

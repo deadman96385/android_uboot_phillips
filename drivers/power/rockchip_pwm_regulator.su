@@ -1,0 +1,3 @@
+rockchip_pwm_regulator.c:46:5:regulator_register_check	24	static
+rockchip_pwm_regulator.c:72:12:pwm_regulator_set_voltage	32	static
+rockchip_pwm_regulator.c:238:5:pwm_regulator_init	96	static

@@ -1,0 +1,9 @@
+OpteeClientMem.c:26:6:my_malloc_init	16	static
+OpteeClientMem.c:36:6:write_usedblock	8	static
+OpteeClientMem.c:49:10:find_sizeblock	0	static
+OpteeClientMem.c:60:6:free_usedblock	0	static
+OpteeClientMem.c:74:7:my_malloc	32	static
+OpteeClientMem.c:105:6:my_free	32	static
+OpteeClientMem.c:131:6:OpteeClientMemInit	48	static
+OpteeClientMem.c:154:7:OpteeClientMemAlloc	0	static
+OpteeClientMem.c:163:6:OpteeClientMemFree	0	static

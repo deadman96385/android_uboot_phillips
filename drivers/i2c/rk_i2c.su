@@ -1,0 +1,13 @@
+rk_i2c.c:248:12:2	16	static
+rk_i2c.c:275:12:3	16	static
+rk_i2c.c:394:12:rk_i2c_write	48	static
+rk_i2c.c:180:13:4	16	static
+rk_i2c.c:478:14:i2c_get_bus_num	0	static
+rk_i2c.c:484:5:i2c_set_bus_num	8	static
+rk_i2c.c:510:5:i2c_read	48	static
+rk_i2c.c:536:5:i2c_write	32	static
+rk_i2c.c:555:5:i2c_probe	16	static
+rk_i2c.c:572:6:i2c_init	16	static
+rk_i2c.c:581:5:i2c_set_bus_speed	8	static
+rk_i2c.c:603:14:i2c_get_bus_speed	0	static
+rk_i2c.c:608:5:i2c_get_bus_num_fdt	8	static

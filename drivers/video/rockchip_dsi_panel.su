@@ -1,0 +1,8 @@
+rockchip_dsi_panel.c:242:12:rockchip_dsi_panel_disable	8	static
+rockchip_dsi_panel.c:229:12:rockchip_dsi_panel_enable	8	static
+rockchip_dsi_panel.c:141:12:rockchip_dsi_panel_send_cmds	24	static
+rockchip_dsi_panel.c:205:12:rockchip_dsi_panel_unprepare	8	static
+rockchip_dsi_panel.c:178:12:rockchip_dsi_panel_prepare	24	static
+rockchip_dsi_panel.c:353:13:rockchip_dsi_panel_deinit	8	static
+rockchip_dsi_panel.c:70:12:0	32	static
+rockchip_dsi_panel.c:323:12:rockchip_dsi_panel_init	40	static

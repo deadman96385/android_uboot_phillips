@@ -1,0 +1,4 @@
+bootm_os.c:17:12:do_bootm_standalone	16	static
+bootm_os.c:440:13:arch_preboot_os	0	static
+bootm_os.c:445:5:boot_selected_os	24	static
+bootm_os.c:462:13:bootm_os_get_boot_func	0	static

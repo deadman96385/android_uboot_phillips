@@ -1,0 +1,15 @@
+rockchip_display.c:148:14:get_display_buffer	8	static
+rockchip_display.c:174:12:2	40	static
+rockchip_display.c:332:5:drm_mode_vrefresh	16	static
+rockchip_display.c:434:6:drm_mode_set_crtcinfo	28	static
+rockchip_display.c:616:12:display_init	120	static
+rockchip_display.c:803:12:display_logo	24	static
+rockchip_display.c:511:6:drm_mode_is_420_only	8	static
+rockchip_display.c:530:6:drm_mode_is_420_also	8	static
+rockchip_display.c:549:6:drm_mode_is_420	16	static
+rockchip_display.c:915:29:find_or_alloc_logo_cache	16	static
+rockchip_display.c:941:12:load_bmp_logo	32	static
+rockchip_display.c:1012:6:rockchip_show_bmp	24	static
+rockchip_display.c:1030:6:rockchip_show_logo	16	static
+rockchip_display.c:1045:5:rockchip_display_init	64	static
+rockchip_display.c:1168:6:rockchip_display_fixup	144	static

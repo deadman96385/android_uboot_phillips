@@ -1,0 +1,15 @@
+OpteeClientRkFs.c:200:12:rkss_read_patition_tables	16	static
+OpteeClientRkFs.c:160:12:rkss_read_multi_sections	24	static
+OpteeClientRkFs.c:180:12:rkss_write_multi_sections	24	static
+OpteeClientRkFs.c:563:12:rkss_incref_multi_usedflags_sections	544	static
+OpteeClientRkFs.c:634:12:rkss_write_empty_ptable	544	static
+OpteeClientRkFs.c:344:12:rkss_get_fileinfo_by_index	544	static
+OpteeClientRkFs.c:375:12:rkss_get_fileinfo_by_name	576	static
+OpteeClientRkFs.c:982:12:tee_fs_link	400	static
+OpteeClientRkFs.c:463:12:rkss_get_dirs_by_name	560	static
+OpteeClientRkFs.c:690:12:rkss_write_back_ptable	536	static
+OpteeClientRkFs.c:849:12:tee_fs_write	672	static
+OpteeClientRkFs.c:942:12:tee_fs_unlink	680	static
+OpteeClientRkFs.c:1188:5:tee_supp_rk_fs_init	552	static
+OpteeClientRkFs.c:1253:6:OpteeClientRkFsInit	0	static
+OpteeClientRkFs.c:1260:5:tee_supp_rk_fs_process	152	static

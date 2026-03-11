@@ -1,0 +1,8 @@
+cmd_rockusb.c:189:13:str2wide	16	static
+cmd_rockusb.c:863:12:rkusb_send_csw	16	static
+cmd_rockusb.c:150:6:rkusb_receive_firstcbw	16	static
+cmd_rockusb.c:162:13:rkusb_event_handler	24	static
+cmd_rockusb.c:914:6:do_rockusb_cmd	88	static
+cmd_rockusb.c:1060:6:rkusb_handle_datarx	32	static
+cmd_rockusb.c:1220:6:rkusb_handle_datatx	40	static
+cmd_rockusb.c:1555:5:do_rockusb	40	static

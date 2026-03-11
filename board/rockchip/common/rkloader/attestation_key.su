@@ -1,0 +1,12 @@
+attestation_key.c:22:13:GetKeySlotStr	0	static
+attestation_key.c:33:6:free_blob	8	static
+attestation_key.c:40:6:free_cert_chain	24	static
+attestation_key.c:52:6:copy_from_buf	16	static
+attestation_key.c:57:6:copy_uint32_from_buf	0	static
+attestation_key.c:61:6:copy_blob_from_buf	16	static
+attestation_key.c:78:6:copy_cert_chain_from_buf	88	static
+attestation_key.c:116:6:validate_ca_header	24	static
+attestation_key.c:139:10:WriteKeyToStorage	96	static
+attestation_key.c:146:10:WriteCertToStorage	96	static
+attestation_key.c:155:10:WriteChainLengthToStorage	104	static
+attestation_key.c:167:12:load_attestation_key	66264	static

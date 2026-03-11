@@ -1,0 +1,11 @@
+rk_gpio.c:18:22:rk_gpio_id_to_bank	0	static
+rk_gpio.c:33:22:rk_gpio_get_bank	0	static
+rk_gpio.c:60:5:rk_gpio_base_to_bank	0	static
+rk_gpio.c:73:5:rk_gpio_gpio_to_irq	8	static
+rk_gpio.c:95:5:rk_gpio_irq_to_gpio	0	static
+rk_gpio.c:136:5:gpio_request	0	static
+rk_gpio.c:142:5:gpio_free	0	static
+rk_gpio.c:151:5:gpio_direction_input	8	static
+rk_gpio.c:171:5:gpio_direction_output	16	static
+rk_gpio.c:192:5:gpio_get_value	8	static
+rk_gpio.c:212:5:gpio_set_value	16	static

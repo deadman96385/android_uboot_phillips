@@ -1,0 +1,9 @@
+rockchip_mipi_dsi.c:247:13:mipi_dsi_packet_format_is_long	0	static
+rockchip_mipi_dsi.c:23:6:mipi_dphy_timing_get_default	8	static
+rockchip_mipi_dsi.c:51:9:mipi_dsi_generic_write	48	static
+rockchip_mipi_dsi.c:87:9:mipi_dsi_dcs_write	48	static
+rockchip_mipi_dsi.c:122:9:mipi_dsi_generic_read	48	static
+rockchip_mipi_dsi.c:159:9:mipi_dsi_dcs_read	56	static
+rockchip_mipi_dsi.c:183:9:mipi_dsi_shutdown_peripheral	40	static
+rockchip_mipi_dsi.c:201:9:mipi_dsi_turn_on_peripheral	40	static
+rockchip_mipi_dsi.c:270:5:mipi_dsi_create_packet	16	static

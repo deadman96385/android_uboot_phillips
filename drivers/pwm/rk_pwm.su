@@ -1,0 +1,6 @@
+rk_pwm.c:58:15:rk_pwm_get_base	0	static
+rk_pwm.c:64:8:rk_pwm_get_clk	0	static
+rk_pwm.c:70:5:pwm_init	0	static
+rk_pwm.c:89:5:pwm_config	80	static
+rk_pwm.c:156:5:pwm_enable	8	static
+rk_pwm.c:173:6:pwm_disable	0	static

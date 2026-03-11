@@ -1,0 +1,8 @@
+lcd_mipi.c:64:13:rk_mipi_screen_pwr_enable	16	static
+lcd_mipi.c:86:6:rockchip_screen_dpishutd	32	static
+lcd_mipi.c:209:5:rk_mipi_screen	40	static
+lcd_mipi.c:263:5:rk_mipi_screen_standby	32	static
+lcd_mipi.c:541:5:rk_mipi_get_dsi_num	0	static
+lcd_mipi.c:548:5:rk_mipi_get_dsi_lane	0	static
+lcd_mipi.c:556:5:rk_mipi_get_dsi_clk	0	static
+lcd_mipi.c:685:5:rk_mipi_screen_probe	48	static

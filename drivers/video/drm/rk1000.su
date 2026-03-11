@@ -1,0 +1,8 @@
+rk1000.c:231:12:rk1000_tve_prepare	0	static
+rk1000.c:236:12:rk1000_tve_unprepare	0	static
+rk1000.c:173:12:drm_rk1000_tve_init	16	static
+rk1000.c:27:12:drm_rk1000_write_reg	32	static
+rk1000.c:274:12:rk1000_tve_disable	16	static
+rk1000.c:241:12:rk1000_tve_enable	48	static
+rk1000.c:223:13:rk1000_tve_deinit	16	static
+rk1000.c:66:6:drm_rk1000_selete_output	4536	dynamic,bounded

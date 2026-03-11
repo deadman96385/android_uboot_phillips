@@ -1,0 +1,16 @@
+power_rockchip.c:58:15:get_rockchip_pmic_id	0	static
+power_rockchip.c:63:6:charge_led_enable	40	static
+power_rockchip.c:99:5:get_power_bat_status	16	static
+power_rockchip.c:121:5:get_power_charger_status	16	static
+power_rockchip.c:148:5:is_exist_battery	40	static
+power_rockchip.c:163:5:is_charging	56	static
+power_rockchip.c:183:5:pmic_charger_setting	8	static
+power_rockchip.c:204:5:is_power_low	40	static
+power_rockchip.c:221:5:is_power_extreme_low	40	static
+power_rockchip.c:269:5:pmic_init	16	static
+power_rockchip.c:367:5:fg_init	8	static
+power_rockchip.c:391:6:plat_charger_init	0	static
+power_rockchip.c:403:6:shut_down	0	static
+power_rockchip.c:454:6:power_pmic_init	0	static
+power_rockchip.c:462:6:power_on_pmic	0	static
+power_rockchip.c:470:6:power_off_pmic	0	static

@@ -1,0 +1,10 @@
+idblock.c:113:12:3	2208	static
+idblock.c:379:5:rkidb_update_loader	64	static
+idblock.c:443:6:rkidb_setup_space	0	static
+idblock.c:478:5:rkidb_get_idblk_data	32	static
+idblock.c:528:5:rkidb_get_rc4_flag	520	static
+idblock.c:543:5:rkidb_get_bootloader_ver	24	static
+idblock.c:565:5:rkidb_get_sn	16	static
+idblock.c:584:6:rkidb_get_mac_address	16	static
+idblock.c:607:5:rkidb_get_hdcp_key	8	static
+idblock.c:621:5:rkidb_erase_drm_key	584	static

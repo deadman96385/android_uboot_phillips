@@ -1,0 +1,3 @@
+iomux-rk3288.c:211:6:rk_iomux_sdcard_save	0	static
+iomux-rk3288.c:224:6:rk_iomux_sdcard_restore	0	static
+iomux.c:27:6:rk_iomux_config	0	static

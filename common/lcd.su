@@ -1,0 +1,16 @@
+lcd.c:174:6:lcd_set_flush_dcache	0	static
+lcd.c:409:12:lcd_get_size	0	static
+lcd.c:151:6:lcd_sync	16	static
+lcd.c:416:7:lcd_get_buffer	0	static
+lcd.c:427:6:lcd_enable_logo	0	static
+lcd.c:434:6:lcd_enable_flip	0	static
+lcd.c:592:7:lcd_setmem	16	static
+lcd.c:654:5:rk_bitmap_from_resource	8	static
+lcd.c:663:6:bitmap_plot	80	static
+lcd.c:466:6:lcd_clear	16	static
+lcd.c:440:5:drv_lcd_init	80	static
+lcd.c:527:12:do_lcd_clear	8	static
+lcd.c:1004:5:lcd_display_bitmap	112	static
+lcd.c:983:5:lcd_display_bitmap_center	8	static
+lcd.c:1395:5:lcd_get_pixel_width	0	static
+lcd.c:1400:5:lcd_get_pixel_height	0	static

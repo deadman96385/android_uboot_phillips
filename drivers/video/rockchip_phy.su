@@ -1,0 +1,6 @@
+rockchip_phy.c:53:28:rockchip_get_phy	24	static
+rockchip_phy.c:70:5:rockchip_phy_power_on	8	static
+rockchip_phy.c:83:5:rockchip_phy_power_off	8	static
+rockchip_phy.c:96:15:rockchip_phy_set_pll	8	static
+rockchip_phy.c:110:6:rockchip_phy_set_bus_width	8	static
+rockchip_phy.c:123:6:rockchip_phy_round_rate	8	static

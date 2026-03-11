@@ -1,0 +1,4 @@
+sha.c:121:13:blk_SHA1_Block	104	static
+sha.c:229:6:SHA_init	0	static
+sha.c:241:6:SHA_update	32	static
+sha.c:291:10:SHA_final	40	static

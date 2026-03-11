@@ -1,0 +1,1 @@
+cmd_drivers/power/fuel_gauge/built-in.o :=  /buildpd/10BDL4551T_SZ/u-boot/../prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-ld.bfd     -r -o drivers/power/fuel_gauge/built-in.o drivers/power/fuel_gauge/fg_cw201x.o drivers/power/fuel_gauge/fg_ricoh619.o drivers/power/fuel_gauge/fg_rk818.o drivers/power/fuel_gauge/fg_rk816.o 

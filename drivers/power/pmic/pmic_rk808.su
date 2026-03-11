@@ -1,0 +1,7 @@
+pmic_rk808.c:258:12:1	40	static
+pmic_rk808.c:133:5:pmic_rk808_charger_setting	24	static
+pmic_rk808.c:160:5:charger_init	8	static
+pmic_rk808.c:192:5:rk808_regulator_disable	32	static
+pmic_rk808.c:214:5:rk808_regulator_enable	32	static
+pmic_rk808.c:393:5:pmic_rk808_init	72	static
+pmic_rk808.c:416:6:pmic_rk808_shut_down	24	static

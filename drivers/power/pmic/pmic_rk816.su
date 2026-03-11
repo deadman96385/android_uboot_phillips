@@ -1,0 +1,11 @@
+pmic_rk816.c:191:12:_rk816_regulator_disable	40	static
+pmic_rk816.c:221:5:_rk816_regulator_enable	40	static
+pmic_rk816.c:130:12:rk805_regulator_disable	32	static
+pmic_rk816.c:153:12:rk805_regulator_enable	32	static
+pmic_rk816.c:283:12:3	40	static
+pmic_rk816.c:336:12:rk816_pre_init_ldo	24	static
+pmic_rk816.c:175:5:rk816_regulator_enable	8	static
+pmic_rk816.c:360:7:pmic_get_rk8xx_id	0	static
+pmic_rk816.c:365:6:pmic_rk816_shut_down	32	static
+pmic_rk816.c:490:5:pmic_rk816_init	72	static
+pmic_rk816.c:518:5:pmic_rk816_poll_pwrkey_stat	32	static

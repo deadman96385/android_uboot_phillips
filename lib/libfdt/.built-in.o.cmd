@@ -1,0 +1,1 @@
+cmd_lib/libfdt/built-in.o :=  /buildpd/10BDL4551T_SZ/u-boot/../prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-ld.bfd     -r -o lib/libfdt/built-in.o lib/libfdt/fdt.o lib/libfdt/fdt_ro.o lib/libfdt/fdt_rw.o lib/libfdt/fdt_strerror.o lib/libfdt/fdt_sw.o lib/libfdt/fdt_wip.o lib/libfdt/fdt_empty_tree.o lib/libfdt/fdt_addresses.o 

@@ -1,0 +1,5 @@
+pmic_ricoh619.c:43:5:ricoh619_check_charge	8	static
+pmic_ricoh619.c:57:5:ricoh619_poll_pwr_key_sta	32	static
+pmic_ricoh619.c:81:5:ricoh619_parse_dt	40	static
+pmic_ricoh619.c:125:5:pmic_ricoh619_init	40	static
+pmic_ricoh619.c:152:6:pmic_ricoh619_shut_down	32	static

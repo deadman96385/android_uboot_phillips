@@ -1,0 +1,8 @@
+rk32xx.c:32:6:board_lmb_reserve	8	static
+rk32xx.c:46:5:board_storage_init	8	static
+rk32xx.c:66:5:board_init	0	static
+rk32xx.c:81:5:checkboard	8	static
+rk32xx.c:93:5:arch_early_init_r	8	static
+rk32xx.c:172:5:board_late_init	40	static
+rk32xx.c:237:5:board_modify_fdt	16	static
+rk32xx.c:323:6:ft_board_setup	24	static

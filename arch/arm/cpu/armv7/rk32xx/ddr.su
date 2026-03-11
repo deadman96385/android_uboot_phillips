@@ -1,0 +1,3 @@
+ddr.c:64:12:dram_bank_reserve	40	static
+ddr.c:105:5:dram_init	32	static
+ddr.c:143:6:dram_init_banksize	40	static

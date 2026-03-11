@@ -1,0 +1,2 @@
+efuse.c:152:7:SecureEfuseRead	32	static
+efuse.c:158:7:FtEfuseRead	32	static

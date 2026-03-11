@@ -1,0 +1,10 @@
+OpteeClientApiLib.c:16:13:OpteeClientApiLibInitialize	8	static
+OpteeClientApiLib.c:36:13:TEEC_InitializeContext	8	static
+OpteeClientApiLib.c:68:13:TEEC_FinalizeContext	0	static
+OpteeClientApiLib.c:82:13:TEEC_AllocateSharedMemory	16	static
+OpteeClientApiLib.c:125:6:TEEC_ReleaseSharedMemory	8	static
+OpteeClientApiLib.c:154:13:TEEC_RegisterSharedMemory	24	static
+OpteeClientApiLib.c:199:13:TEEC_OpenSession	168	static
+OpteeClientApiLib.c:248:6:TEEC_CloseSession	16	static
+OpteeClientApiLib.c:269:13:TEEC_InvokeCommand	160	static
+OpteeClientApiLib.c:309:6:TEEC_RequestCancellation	16	static

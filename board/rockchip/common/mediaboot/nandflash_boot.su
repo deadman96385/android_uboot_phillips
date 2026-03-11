@@ -1,0 +1,15 @@
+nandflash_boot.c:14:6:LMemApiReadId	8	static
+nandflash_boot.c:21:6:LMemApiFlashInfo	8	static
+nandflash_boot.c:28:8:LMemApiLowFormat	8	static
+nandflash_boot.c:40:8:LMemApiErase	8	static
+nandflash_boot.c:52:8:LMemApiReadPba	8	static
+nandflash_boot.c:63:8:LMemApiWritePba	8	static
+nandflash_boot.c:74:8:LMemApiReadLba	8	static
+nandflash_boot.c:84:8:LMemApiWriteLba	8	static
+nandflash_boot.c:95:8:FtlDeInit	8	static
+nandflash_boot.c:106:8:FlashDeInit	8	static
+nandflash_boot.c:117:8:LMemApiGetCapacity	8	static
+nandflash_boot.c:128:8:LMemApiSysDataLoad	16	static
+nandflash_boot.c:140:8:LMemApiSysDataStore	8	static
+nandflash_boot.c:151:8:LMemApiEraseData	8	static
+nandflash_boot.c:162:8:lMemApiInit	8	static

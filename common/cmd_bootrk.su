@@ -1,0 +1,2 @@
+cmd_bootrk.c:50:12:board_modify_fdt	0	static
+cmd_bootrk.c:619:5:do_bootrk	648	static

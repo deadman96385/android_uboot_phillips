@@ -1,0 +1,4 @@
+rk32_lcdc.c:806:6:rk_lcdc_set_par	128	static
+rk32_lcdc.c:842:5:rk_lcdc_load_screen	16	static
+rk32_lcdc.c:1000:6:rk_lcdc_standby	8	static
+rk32_lcdc.c:1050:5:rk_lcdc_init	24	static

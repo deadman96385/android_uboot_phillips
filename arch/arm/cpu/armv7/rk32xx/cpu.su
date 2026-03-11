@@ -1,0 +1,6 @@
+cpu.c:21:6:enable_caches	0	static
+cpu.c:41:5:rk_get_bootrom_chip_version	0	static
+cpu.c:62:5:rk_get_chiptype	24	static
+cpu.c:124:7:rk_get_cpu_version	0	static
+cpu.c:209:5:arch_cpu_init	8	static
+cpu.c:293:5:print_cpuinfo	8	static

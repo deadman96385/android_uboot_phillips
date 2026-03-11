@@ -1,0 +1,2 @@
+reset.c:72:6:rk_module_deinit	8	static
+reset.c:99:6:reset_cpu	8	static
