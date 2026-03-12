@@ -186,7 +186,7 @@ enum fbt_reboot_type board_fbt_get_reboot_type(void)
 
 int board_fbt_key_pressed(void)
 {
-	uint32 boot_rockusb = 0, boot_recovery = 0, boot_fastboot = 0;
+	uint32 boot_rockusb = 0, boot_recovery = 0, boot_fastboot = 0,boot_reset = 0;
 	enum fbt_reboot_type frt = FASTBOOT_REBOOT_UNKNOWN;
 	int vbus = 0;
 	int ir_keycode = 0;
@@ -196,7 +196,7 @@ int board_fbt_key_pressed(void)
 #endif
 
 #ifdef CONFIG_RK_KEY
-	checkKey((uint32 *)&boot_rockusb, (uint32 *)&boot_recovery, (uint32 *)&boot_fastboot);
+	checkKey((uint32 *)&boot_rockusb, (uint32 *)&boot_recovery, (uint32 *)&boot_fastboot,(uint32 *)&boot_reset);
 #endif
 
 #if defined(CONFIG_RK_PWM_REMOTE)
@@ -226,6 +226,9 @@ int board_fbt_key_pressed(void)
 #endif
 	} else if (ir_keycode == KEY_DOWN) {
 		printf("recovery wipe data key pressed.\n");
+		frt = FASTBOOT_REBOOT_RECOVERY_WIPE_DATA;
+	} else if (boot_reset) {
+		printf("boot_reset key  pressed to wipe data.\n");
 		frt = FASTBOOT_REBOOT_RECOVERY_WIPE_DATA;
 	}
 

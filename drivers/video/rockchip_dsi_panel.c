@@ -54,6 +54,7 @@ struct rockchip_dsi_panel {
 
 	struct fdt_gpio_state enable_gpio;
 	struct fdt_gpio_state reset_gpio;
+	struct fdt_gpio_state cs_gpio;
 
 	unsigned int delay_reset;
 	unsigned int delay_prepare;
@@ -180,6 +181,9 @@ static int rockchip_dsi_panel_prepare(struct display_state *state)
 	struct rockchip_dsi_panel *panel = panel_state->private;
 	int ret;
 
+	fdtdec_set_gpio(&panel->cs_gpio, 1);
+	msleep(panel->delay_prepare);
+
 	fdtdec_set_gpio(&panel->enable_gpio, 1);
 	msleep(panel->delay_prepare);
 
@@ -216,6 +220,9 @@ static int rockchip_dsi_panel_unprepare(struct display_state *state)
 
 	fdtdec_set_gpio(&panel->enable_gpio, 0);
 
+	mdelay(panel->delay_unprepare);
+	fdtdec_set_gpio(&panel->cs_gpio, 0);
+
 	return 0;
 }
 
@@ -247,12 +254,14 @@ static int rockchip_dsi_panel_disable(struct display_state *state)
 
 static int rockchip_dsi_panel_parse_dt(const void *blob, int node, struct rockchip_dsi_panel *panel)
 {
+	struct fdt_gpio_state *cs_gpio = &panel->cs_gpio;
 	struct fdt_gpio_state *enable_gpio = &panel->enable_gpio;
 	struct fdt_gpio_state *reset_gpio = &panel->reset_gpio;
 	const void *data;
 	int len = 0;
 	int ret = 0;
 
+	fdtdec_decode_gpio(blob, node, "cs-gpios", cs_gpio);
 	fdtdec_decode_gpio(blob, node, "enable-gpios", enable_gpio);
 	fdtdec_decode_gpio(blob, node, "reset-gpios", reset_gpio);
 
@@ -295,6 +304,7 @@ static int rockchip_dsi_panel_parse_dt(const void *blob, int node, struct rockch
 	}
 
 	/* keep panel blank on init. */
+	gpio_direction_output(cs_gpio->gpio, !!(cs_gpio->flags & OF_GPIO_ACTIVE_LOW));
 	gpio_direction_output(enable_gpio->gpio, !!(enable_gpio->flags & OF_GPIO_ACTIVE_LOW));
 	gpio_direction_output(reset_gpio->gpio, !(reset_gpio->flags & OF_GPIO_ACTIVE_LOW));
 

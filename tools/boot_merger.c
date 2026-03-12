@@ -162,7 +162,8 @@ static inline void fixPath(char* path) {
 			strcat(path, gNewPath);
 			strcat(path, tmp);
 		}
-	} else if (gPrePath && strncmp(path, gPrePath, strlen(gPrePath))) {
+	} else if ((ulong)path != (ulong)gOpts.outPath && /* ignore output */
+		    gPrePath && strncmp(path, gPrePath, strlen(gPrePath))) {
 		strcpy(tmp, path);
 		strcpy(path, gPrePath);
 		strcat(path, tmp);

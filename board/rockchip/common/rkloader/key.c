@@ -27,7 +27,7 @@ __maybe_unused static key_config	key_rockusb;
 __maybe_unused static key_config	key_recovery;
 __maybe_unused static key_config	key_fastboot;
 __maybe_unused static key_config	key_power;
-
+__maybe_unused static key_config	key_reset;
 
 #ifdef CONFIG_OF_LIBFDT
 __maybe_unused static struct fdt_gpio_state	gPowerKey;
@@ -36,7 +36,7 @@ __maybe_unused static int rkkey_parse_powerkey_dt(const void *blob, struct fdt_g
 
 
 /*
-    ¹Ì¶¨GPIOA_0¿Ú×÷ÎªÉÕÐ´¼ì²â¿Ú,ÏµÍ³²¿·Ö²»ÄÜÊ¹ÓÃ¸Ã¿Ú
+    ï¿½Ì¶ï¿½GPIOA_0ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½,ÏµÍ³ï¿½ï¿½ï¿½Ö²ï¿½ï¿½ï¿½Ê¹ï¿½Ã¸Ã¿ï¿½
 */
 static int GetPortState(key_config *key)
 {
@@ -46,7 +46,7 @@ static int GetPortState(key_config *key)
 	int_conf* ioint = &key->key.ioint;
 
 	if (key->type == KEY_AD) {
-		/* TODO: clkÃ»ÓÐÅäÖÃ */
+		/* TODO: clkÃ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 #if defined(CONFIG_RKCHIP_RK322XH)
 		rkclk_set_saradc_clk();
 #endif
@@ -86,13 +86,14 @@ static int GetPortState(key_config *key)
 }
 
 
-int checkKey(uint32* boot_rockusb, uint32* boot_recovery, uint32* boot_fastboot)
+int checkKey(uint32* boot_rockusb, uint32* boot_recovery, uint32* boot_fastboot,uint32* boot_reset)
 {
 	printf("checkKey\n");
 
 	*boot_rockusb = 0;
 	*boot_recovery = 0;
 	*boot_fastboot = 0;
+	*boot_reset=0;
 
 	if(GetPortState(&key_rockusb)) {
 		*boot_rockusb = 1;
@@ -102,6 +103,9 @@ int checkKey(uint32* boot_rockusb, uint32* boot_recovery, uint32* boot_fastboot)
 	}
 	if(GetPortState(&key_fastboot)) {
 		*boot_fastboot = 1;
+	}
+	if(GetPortState(&key_reset)) {
+		*boot_reset = 1;
 	}
 
 	return 0;
@@ -186,7 +190,15 @@ __maybe_unused static void PowerKeyInit(void)
 	key_power.key.ioint.press_time = 0;
 }
 
-
+__maybe_unused static void ResetKeyInit(void)
+{
+	key_reset.type = KEY_INT;
+	key_reset.key.ioint.name = "reset_key";
+	key_reset.key.ioint.gpio = (GPIO_BANK7 | GPIO_A7);
+	key_reset.key.ioint.flags = IRQ_TYPE_EDGE_FALLING;
+	key_reset.key.ioint.pressed_state = 0;
+	key_reset.key.ioint.press_time = 0;
+}
 __maybe_unused static void PowerHoldGpioInit(void)
 {
 
@@ -284,6 +296,7 @@ void key_init(void)
 	memset(&key_recovery, 0, sizeof(key_config));
 	memset(&key_fastboot, 0, sizeof(key_config));
 	memset(&key_power, 0, sizeof(key_config));
+	memset(&key_reset, 0, sizeof(key_config));
 
 	memset(&power_hold_gpio, 0, sizeof(gpio_conf));
 	memset(&charge_state_gpio, 0, sizeof(gpio_conf));
@@ -297,6 +310,7 @@ void key_init(void)
 	ChargeStateGpioInit();
 	PowerHoldGpioInit();
 #endif
+	ResetKeyInit();
 }
 
 
