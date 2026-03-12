@@ -61,7 +61,7 @@ typedef struct {
 	}key;
 }key_config;
 
-int checkKey(uint32* boot_rockusb, uint32* boot_recovery, uint32* boot_fastboot);
+int checkKey(uint32* boot_rockusb, uint32* boot_recovery, uint32* boot_fastboot,uint32* boot_reset);
 int rkkey_power_state(void);
 void key_init(void);
 int is_charging(void);

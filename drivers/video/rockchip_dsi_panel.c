@@ -180,6 +180,9 @@ static int rockchip_dsi_panel_prepare(struct display_state *state)
 	struct rockchip_dsi_panel *panel = panel_state->private;
 	int ret;
 
+	fdtdec_set_gpio(&panel->cs_gpio, 1);
+	msleep(panel->delay_prepare);
+
 	fdtdec_set_gpio(&panel->enable_gpio, 1);
 	msleep(panel->delay_prepare);
 
