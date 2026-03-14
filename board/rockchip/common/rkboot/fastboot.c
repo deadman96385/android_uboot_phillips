@@ -51,6 +51,9 @@ int g_is_new_display = 0;
 #ifdef CONFIG_ROCKCHIP_DISPLAY
 extern int rockchip_display_init(void);
 extern void rockchip_show_logo(void);
+extern void rockchip_show_fastboot_screen(const char *serial, const char *product,
+					  const char *bootloader,
+					  enum fbt_reboot_type reboot_type);
 #endif
 
 #ifdef CONFIG_UBOOT_CHARGE
@@ -515,19 +518,18 @@ void board_fbt_preboot(void)
 		if (!fdt_device_is_available(gd->fdt_blob, node) || node < 0) {
 #if defined(CONFIG_LCD)
 			g_is_new_display = 0;
-			node = fdt_path_offset(gd->fdt_blob, "/fb");
-			g_logo_on_state = fdtdec_get_int(gd->fdt_blob, node, "rockchip,uboot-logo-on", 0);
-			if (g_logo_on_state != 0) {
-				lcd_enable_logo(true);
-				drv_lcd_init();
-			}
+			/* Force LCD init regardless of rockchip,uboot-logo-on DTS flag */
+			lcd_enable_logo(false);
+			if (drv_lcd_init() > 0)
+				g_logo_on_state = 1;
 #else
 			printf("failed to found display node\n");
 #endif
 		}
 #if defined(CONFIG_ROCKCHIP_DISPLAY)
-		else if (!rockchip_display_init()) {
-			g_logo_on_state = 1;
+		else {
+			if (!rockchip_display_init())
+				g_logo_on_state = 1;
 		}
 #endif
 	}
@@ -644,6 +646,22 @@ void board_fbt_preboot(void)
 #ifdef CONFIG_CMD_FASTBOOT
 	else if (frt == FASTBOOT_REBOOT_FASTBOOT) {
 		FBTDBG("\n%s: starting fastboot because of reboot flag\n", __func__);
+		if (g_logo_on_state) {
+#ifdef CONFIG_ROCKCHIP_DISPLAY
+			rockchip_show_fastboot_screen(
+				getenv("fbt_sn#") ? getenv("fbt_sn#") : "unknown",
+				CONFIG_USBD_PRODUCT_NAME,
+				U_BOOT_VERSION,
+				frt);
+#elif defined(CONFIG_LCD) && !defined(CONFIG_LCD_CONSOLE_DISABLE)
+			lcd_printf("\n  FASTBOOT MODE\n");
+			lcd_printf("  Product:    %s\n", CONFIG_USBD_PRODUCT_NAME);
+			lcd_printf("  Bootloader: %s\n", U_BOOT_VERSION);
+			lcd_printf("  Serial:     %s\n",
+				getenv("fbt_sn#") ? getenv("fbt_sn#") : "unknown");
+			lcd_printf("  Waiting for fastboot commands...\n");
+#endif
+		}
 		board_fbt_request_start_fastboot();
 	}
 #endif

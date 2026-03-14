@@ -738,6 +738,14 @@ resource_content rkimage_load_fdt_ram(void* addr, size_t len)
 
 void rkimage_prepare_fdt(void)
 {
+#ifdef CONFIG_OF_CONTROL
+	if (gd->fdt_blob && fdt_magic(gd->fdt_blob) == FDT_MAGIC) {
+		printf("Using internal control FDT.\n");
+		gd->fdt_size = ALIGN(fdt_totalsize(gd->fdt_blob) + 0x1000, 32);
+		return;
+	}
+#endif
+
 	gd->fdt_blob = NULL;
 	gd->fdt_size = 0;
 #ifdef CONFIG_RESOURCE_PARTITION
@@ -775,4 +783,3 @@ void rkimage_prepare_fdt(void)
 	}
 #endif
 }
-
