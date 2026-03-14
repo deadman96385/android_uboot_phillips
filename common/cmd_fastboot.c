@@ -712,6 +712,9 @@ void fbt_fastboot_init(void)
 
 #ifdef CONFIG_FASTBOOT_LOG
 	log_buffer = (char*)gd->arch.fastboot_log_buf_addr;
+	log_position = 0;
+	if (log_buffer)
+		log_buffer[0] = '\0';
 #endif
 
 	fastboot_unlocked_env = getenv(FASTBOOT_UNLOCKED_ENV_NAME);
@@ -1018,10 +1021,19 @@ static void fbt_handle_getvar(char *cmdbuf)
 
 	if (do_all) {
 		for (i = 0; i < ARRAY_SIZE(getvar_table); i++) {
-			value = (getvar_table[i].getvar_func)(subcmd);
-			if (value ) {
+			if (!getvar_table[i].exact_match)
+				continue;
+			value = (getvar_table[i].getvar_func)(
+					getvar_table[i].variable_name);
+			if (value) {
 				FBTDBG("%s: %s\n",
 						getvar_table[i].variable_name, value);
+				snprintf(priv.response, sizeof(priv.response),
+					"INFO%s:%s",
+					getvar_table[i].variable_name, value);
+				priv.flag |= FASTBOOT_FLAG_RESPONSE;
+				fbt_handle_response();
+				fbt_wait_usb_fifo_flush();
 			}
 		}
 		strcpy(priv.response, "OKAY");
@@ -1194,6 +1206,10 @@ static void fbt_handle_oem(char *cmdbuf)
 #ifdef CONFIG_FASTBOOT_LOG
 	/* %fastboot oem log */
 	if (strcmp(cmdbuf, "log") == 0) {
+		if (!priv.unlocked) {
+			strcpy(priv.response, "FAILdevice is locked");
+			return;
+		}
 		FBTDBG("oem %s\n", cmdbuf);
 		fbt_dump_log(log_buffer, log_position);
 		strcpy(priv.response, "OKAY");
@@ -1986,22 +2002,24 @@ U_BOOT_CMD(fastboot, 1,	1, do_fastboot,
 #ifdef CONFIG_FASTBOOT_LOG
 int fbt_log(const char *info, const int len, bool send)
 {
-	unsigned long space_in_log = CONFIG_FASTBOOT_LOG_SIZE - log_position - 1;
+	unsigned long space_in_log;
 	unsigned long bytes_to_log;
 
 	/* check if relocation is done before we can use globals */
-	if (gd->flags & GD_FLG_RELOC) {
-		if (len > space_in_log)
-			bytes_to_log = space_in_log;
-		else
-			bytes_to_log = len;
+	if ((gd->flags & GD_FLG_RELOC) && log_buffer && info && len > 0) {
+		if (log_position >= CONFIG_FASTBOOT_LOG_SIZE - 1)
+			goto send_only;
 
+		space_in_log = CONFIG_FASTBOOT_LOG_SIZE - log_position - 1;
+		bytes_to_log = (len > (int)space_in_log) ? space_in_log : len;
 		if (bytes_to_log) {
-			strncpy(&log_buffer[log_position], info, bytes_to_log);
+			memcpy(&log_buffer[log_position], info, bytes_to_log);
 			log_position += bytes_to_log;
+			log_buffer[log_position] = '\0';
 		}
 	}
 
+send_only:
 	if (!send)
 		return 0;
 	return fbt_send_raw_info(info, len);

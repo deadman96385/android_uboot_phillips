@@ -12,6 +12,9 @@
 #include <post.h>
 #include <linux/compiler.h>
 #include <errno.h>
+#ifdef CONFIG_FASTBOOT_LOG
+#include <fastboot.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -511,6 +514,10 @@ void serial_putc(const char c)
 void serial_puts(const char *s)
 {
 	get_current()->puts(s);
+#ifdef CONFIG_FASTBOOT_LOG
+	if (s)
+		fbt_log(s, strlen(s), false);
+#endif
 }
 
 /**
