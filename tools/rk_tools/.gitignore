@@ -1,1 +1,3 @@
 !*.bin
+RKBOOT/RK3288_original.ini
+bin/rk32/original-uboot-raw.bin
