@@ -106,6 +106,176 @@ struct pwm_bl {
 };
 
 struct pwm_bl bl;
+
+#ifdef CONFIG_RKCHIP_RK3288
+static void rk3288_force_gpio_iomux(struct fdt_gpio_state *gpio)
+{
+	u32 reg = 0;
+	u32 bank;
+	u32 pin;
+	u32 group;
+	u32 shift;
+	u32 mask;
+
+	if (!fdt_gpio_isvalid(gpio))
+		return;
+
+	bank = RK_GPIO_BANK(gpio->gpio);
+	pin = RK_GPIO_PIN(gpio->gpio);
+	group = pin / 8;
+	shift = (pin % 8) * 2;
+	mask = (0x3 << shift);
+
+	if (bank == 0) {
+		switch (group) {
+		case 0:
+			reg = PMU_GPIO0A_IOMUX;
+			break;
+		case 1:
+			reg = PMU_GPIO0B_IOMUX;
+			break;
+		case 2:
+			reg = PMU_GPIO0C_IOMUX;
+			break;
+		case 3:
+			reg = PMU_GPIO0D_IOMUX;
+			break;
+		default:
+			return;
+		}
+
+		pmu_writel(mask << 16, reg);
+		return;
+	}
+
+	switch (bank) {
+	case 1:
+		if (group == 3)
+			reg = GRF_GPIO1D_IOMUX;
+		break;
+	case 2:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO2A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO2B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO2C_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 3:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO3A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO3B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO3C_IOMUX;
+			break;
+		case 3:
+			reg = (pin < GPIO_D4) ? GRF_GPIO3DL_IOMUX : GRF_GPIO3DH_IOMUX;
+			if (pin >= GPIO_D4)
+				shift = ((pin - GPIO_D4) * 2);
+			break;
+		default:
+			break;
+		}
+		break;
+	case 4:
+		switch (group) {
+		case 0:
+			reg = (pin < GPIO_A4) ? GRF_GPIO4AL_IOMUX : GRF_GPIO4AH_IOMUX;
+			if (pin >= GPIO_A4)
+				shift = ((pin - GPIO_A4) * 2);
+			break;
+		case 1:
+			reg = GRF_GPIO4BL_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO4C_IOMUX;
+			break;
+		case 3:
+			reg = GRF_GPIO4D_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 5:
+		switch (group) {
+		case 1:
+			reg = GRF_GPIO5B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO5C_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 6:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO6A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO6B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO6C_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 7:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO7A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO7B_IOMUX;
+			break;
+		case 2:
+			reg = (pin < GPIO_C4) ? GRF_GPIO7CL_IOMUX : GRF_GPIO7CH_IOMUX;
+			if (pin >= GPIO_C4)
+				shift = ((pin - GPIO_C4) * 2);
+			break;
+		default:
+			break;
+		}
+		break;
+	case 8:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO8A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO8B_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (!reg)
+		return;
+
+	mask = (0x3 << shift);
+	grf_writel(mask << 16, reg);
+}
+#endif
+
 static void write_pwm_reg(struct pwm_bl *bl, int reg, int val)
 {
 	writel(val, bl->base + reg);
@@ -165,7 +335,6 @@ static int rk_bl_parse_dt(const void *blob)
 	bl.base = fdtdec_get_addr_size_auto_noparent(blob, pwm_node,
 						     "reg", 0, NULL);
 	bl.id = get_pwm_id(bl.base);
-	debug("bl id = %d, base= 0x%x\n", bl.id, bl.base);
 	fdt_getprop(blob, bl.node, "brightness-levels", &len);
 	bl.max_brightness = len / sizeof(u32);
 	bl.levels = malloc(len);
@@ -207,19 +376,31 @@ int rk_pwm_bl_config(int brightness)
 			return ret;
 #endif
 		rk_iomux_config(bl.id + RK_PWM0_IOMUX);
-		gpio_direction_output(bl.bl_en.gpio, bl.bl_en.flags);
+#ifdef CONFIG_RKCHIP_RK3288
+		rk3288_force_gpio_iomux(&bl.bl_en);
+#endif
+		if (fdt_gpio_isvalid(&bl.bl_en))
+			gpio_direction_output(bl.bl_en.gpio, bl.bl_en.flags);
 	}
 
 	if (!bl.status)
 		return -EPERM;
 
-	if (brightness == 0)
-		gpio_set_value(bl.bl_en.gpio, !(bl.bl_en.flags));
-	else
-		gpio_set_value(bl.bl_en.gpio, bl.bl_en.flags);
+	if (fdt_gpio_isvalid(&bl.bl_en)) {
+		if (brightness == 0)
+			gpio_set_value(bl.bl_en.gpio, !(bl.bl_en.flags));
+		else
+			gpio_set_value(bl.bl_en.gpio, bl.bl_en.flags);
+	}
 
 	if (brightness < 0)
 		brightness = bl.dft_brightness;
+	if (!bl.levels || bl.max_brightness <= 0)
+		return -EINVAL;
+	if (brightness >= bl.max_brightness)
+		brightness = bl.max_brightness - 1;
+	if (brightness < 0)
+		brightness = 0;
 	debug("%s: brightness: %d\n", __func__, brightness);
 	brightness = bl.levels[brightness];
 	duty_ns = (brightness * bl.period)/bl.max_brightness;

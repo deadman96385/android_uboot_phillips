@@ -55,6 +55,7 @@ struct rockchip_dsi_panel {
 	struct fdt_gpio_state enable_gpio;
 	struct fdt_gpio_state reset_gpio;
 	struct fdt_gpio_state cs_gpio;
+	struct fdt_gpio_state lcd_cs_gpio;
 
 	unsigned int delay_reset;
 	unsigned int delay_prepare;
@@ -66,6 +67,175 @@ struct rockchip_dsi_panel {
 	struct dsi_panel_cmds *on_cmds;
 	struct dsi_panel_cmds *off_cmds;
 };
+
+#ifdef CONFIG_RKCHIP_RK3288
+static void rk3288_force_gpio_iomux(struct fdt_gpio_state *gpio)
+{
+	u32 reg = 0;
+	u32 bank;
+	u32 pin;
+	u32 group;
+	u32 shift;
+	u32 mask;
+
+	if (!fdt_gpio_isvalid(gpio))
+		return;
+
+	bank = RK_GPIO_BANK(gpio->gpio);
+	pin = RK_GPIO_PIN(gpio->gpio);
+	group = pin / 8;
+	shift = (pin % 8) * 2;
+	mask = (0x3 << shift);
+
+	if (bank == 0) {
+		switch (group) {
+		case 0:
+			reg = PMU_GPIO0A_IOMUX;
+			break;
+		case 1:
+			reg = PMU_GPIO0B_IOMUX;
+			break;
+		case 2:
+			reg = PMU_GPIO0C_IOMUX;
+			break;
+		case 3:
+			reg = PMU_GPIO0D_IOMUX;
+			break;
+		default:
+			return;
+		}
+
+		pmu_writel(mask << 16, reg);
+		return;
+	}
+
+	switch (bank) {
+	case 1:
+		if (group == 3)
+			reg = GRF_GPIO1D_IOMUX;
+		break;
+	case 2:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO2A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO2B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO2C_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 3:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO3A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO3B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO3C_IOMUX;
+			break;
+		case 3:
+			reg = (pin < GPIO_D4) ? GRF_GPIO3DL_IOMUX : GRF_GPIO3DH_IOMUX;
+			if (pin >= GPIO_D4)
+				shift = ((pin - GPIO_D4) * 2);
+			break;
+		default:
+			break;
+		}
+		break;
+	case 4:
+		switch (group) {
+		case 0:
+			reg = (pin < GPIO_A4) ? GRF_GPIO4AL_IOMUX : GRF_GPIO4AH_IOMUX;
+			if (pin >= GPIO_A4)
+				shift = ((pin - GPIO_A4) * 2);
+			break;
+		case 1:
+			reg = GRF_GPIO4BL_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO4C_IOMUX;
+			break;
+		case 3:
+			reg = GRF_GPIO4D_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 5:
+		switch (group) {
+		case 1:
+			reg = GRF_GPIO5B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO5C_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 6:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO6A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO6B_IOMUX;
+			break;
+		case 2:
+			reg = GRF_GPIO6C_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	case 7:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO7A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO7B_IOMUX;
+			break;
+		case 2:
+			reg = (pin < GPIO_C4) ? GRF_GPIO7CL_IOMUX : GRF_GPIO7CH_IOMUX;
+			if (pin >= GPIO_C4)
+				shift = ((pin - GPIO_C4) * 2);
+			break;
+		default:
+			break;
+		}
+		break;
+	case 8:
+		switch (group) {
+		case 0:
+			reg = GRF_GPIO8A_IOMUX;
+			break;
+		case 1:
+			reg = GRF_GPIO8B_IOMUX;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (!reg)
+		return;
+
+	mask = (0x3 << shift);
+	grf_writel(mask << 16, reg);
+}
+#endif
 
 static int rockchip_dsi_panel_parse_cmds(const void *blob, int node,
 					 const u8 *data, int blen,
@@ -181,15 +351,21 @@ static int rockchip_dsi_panel_prepare(struct display_state *state)
 	struct rockchip_dsi_panel *panel = panel_state->private;
 	int ret;
 
-	fdtdec_set_gpio(&panel->cs_gpio, 1);
+	if (fdt_gpio_isvalid(&panel->cs_gpio))
+		fdtdec_set_gpio(&panel->cs_gpio, 1);
+	if (fdt_gpio_isvalid(&panel->lcd_cs_gpio))
+		fdtdec_set_gpio(&panel->lcd_cs_gpio, 1);
 	msleep(panel->delay_prepare);
 
-	fdtdec_set_gpio(&panel->enable_gpio, 1);
+	if (fdt_gpio_isvalid(&panel->enable_gpio))
+		fdtdec_set_gpio(&panel->enable_gpio, 1);
 	msleep(panel->delay_prepare);
 
-	fdtdec_set_gpio(&panel->reset_gpio, 1);
+	if (fdt_gpio_isvalid(&panel->reset_gpio))
+		fdtdec_set_gpio(&panel->reset_gpio, 1);
 	msleep(panel->delay_reset);
-	fdtdec_set_gpio(&panel->reset_gpio, 0);
+	if (fdt_gpio_isvalid(&panel->reset_gpio))
+		fdtdec_set_gpio(&panel->reset_gpio, 0);
 
 	msleep(panel->delay_init);
 
@@ -214,14 +390,19 @@ static int rockchip_dsi_panel_unprepare(struct display_state *state)
 			printf("failed to send on cmds: %d\n", ret);
 	}
 
-	fdtdec_set_gpio(&panel->reset_gpio, 1);
+	if (fdt_gpio_isvalid(&panel->reset_gpio))
+		fdtdec_set_gpio(&panel->reset_gpio, 1);
 
 	mdelay(panel->delay_unprepare);
 
-	fdtdec_set_gpio(&panel->enable_gpio, 0);
+	if (fdt_gpio_isvalid(&panel->enable_gpio))
+		fdtdec_set_gpio(&panel->enable_gpio, 0);
 
 	mdelay(panel->delay_unprepare);
-	fdtdec_set_gpio(&panel->cs_gpio, 0);
+	if (fdt_gpio_isvalid(&panel->cs_gpio))
+		fdtdec_set_gpio(&panel->cs_gpio, 0);
+	if (fdt_gpio_isvalid(&panel->lcd_cs_gpio))
+		fdtdec_set_gpio(&panel->lcd_cs_gpio, 0);
 
 	return 0;
 }
@@ -257,6 +438,7 @@ static int rockchip_dsi_panel_parse_dt(const void *blob, int node, struct rockch
 	struct fdt_gpio_state *cs_gpio = &panel->cs_gpio;
 	struct fdt_gpio_state *enable_gpio = &panel->enable_gpio;
 	struct fdt_gpio_state *reset_gpio = &panel->reset_gpio;
+	struct fdt_gpio_state *lcd_cs_gpio = &panel->lcd_cs_gpio;
 	const void *data;
 	int len = 0;
 	int ret = 0;
@@ -264,6 +446,7 @@ static int rockchip_dsi_panel_parse_dt(const void *blob, int node, struct rockch
 	fdtdec_decode_gpio(blob, node, "cs-gpios", cs_gpio);
 	fdtdec_decode_gpio(blob, node, "enable-gpios", enable_gpio);
 	fdtdec_decode_gpio(blob, node, "reset-gpios", reset_gpio);
+	fdtdec_decode_gpio(blob, node, "lcd-cs-gpios", lcd_cs_gpio);
 
 	panel->delay_prepare = fdtdec_get_int(blob, node, "prepare-delay-ms", 0);
 	panel->delay_unprepare = fdtdec_get_int(blob, node, "unprepare-delay-ms", 0);
@@ -303,10 +486,31 @@ static int rockchip_dsi_panel_parse_dt(const void *blob, int node, struct rockch
 		}
 	}
 
+#ifdef CONFIG_RKCHIP_RK3288
+	/*
+	 * This vendor tree does not apply panel pinctrl states automatically.
+	 * Force the cold-boot control lines back to GPIO mode before driving
+	 * reset/enable/cs so bring-up does not depend on Linux leaving muxing.
+	 */
+	rk3288_force_gpio_iomux(cs_gpio);
+	rk3288_force_gpio_iomux(lcd_cs_gpio);
+	rk3288_force_gpio_iomux(enable_gpio);
+	rk3288_force_gpio_iomux(reset_gpio);
+#endif
+
 	/* keep panel blank on init. */
-	gpio_direction_output(cs_gpio->gpio, !!(cs_gpio->flags & OF_GPIO_ACTIVE_LOW));
-	gpio_direction_output(enable_gpio->gpio, !!(enable_gpio->flags & OF_GPIO_ACTIVE_LOW));
-	gpio_direction_output(reset_gpio->gpio, !(reset_gpio->flags & OF_GPIO_ACTIVE_LOW));
+	if (fdt_gpio_isvalid(cs_gpio))
+		gpio_direction_output(cs_gpio->gpio,
+				      !!(cs_gpio->flags & OF_GPIO_ACTIVE_LOW));
+	if (fdt_gpio_isvalid(lcd_cs_gpio))
+		gpio_direction_output(lcd_cs_gpio->gpio,
+				      !!(lcd_cs_gpio->flags & OF_GPIO_ACTIVE_LOW));
+	if (fdt_gpio_isvalid(enable_gpio))
+		gpio_direction_output(enable_gpio->gpio,
+				      !!(enable_gpio->flags & OF_GPIO_ACTIVE_LOW));
+	if (fdt_gpio_isvalid(reset_gpio))
+		gpio_direction_output(reset_gpio->gpio,
+				      !(reset_gpio->flags & OF_GPIO_ACTIVE_LOW));
 
 #ifdef CONFIG_RK_PWM_BL
 	rk_pwm_bl_config(0);
@@ -358,11 +562,13 @@ static void rockchip_dsi_panel_deinit(struct display_state *state)
 	if (panel->on_cmds) {
 		free(panel->on_cmds->buf);
 		free(panel->on_cmds->cmds);
+		free(panel->on_cmds);
 	}
 
 	if (panel->off_cmds) {
 		free(panel->off_cmds->buf);
 		free(panel->off_cmds->cmds);
+		free(panel->off_cmds);
 	}
 
 	free(panel);

@@ -106,6 +106,7 @@ struct logo_info {
 	int mode;
 	char *mem;
 	bool ymirror;
+	u32 rotate;
 	u32 offset;
 	u32 width;
 	u32 height;
@@ -114,7 +115,7 @@ struct logo_info {
 
 struct rockchip_logo_cache {
 	struct list_head head;
-	char name[20];
+	char *name;
 	struct logo_info logo;
 };
 
@@ -137,6 +138,7 @@ struct display_state {
 	int enable;
 	int is_init;
 	int is_enable;
+	u32 rotate;
 };
 
 int drm_mode_vrefresh(const struct drm_display_mode *mode);

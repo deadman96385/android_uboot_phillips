@@ -17,6 +17,8 @@
 #include <linux/media-bus-format.h>
 #include <malloc.h>
 #include <resource.h>
+#include <fastboot.h>
+#include <../board/rockchip/common/storage/storage.h>
 
 #include "bmp_helper.h"
 #include "rockchip_display.h"
@@ -24,6 +26,10 @@
 #include "rockchip_connector.h"
 #include "rockchip_phy.h"
 #include "rockchip_panel.h"
+#ifndef CONFIG_LCD_CONSOLE_DISABLE
+#include <video_font_data.h>
+#include <version.h>
+#endif
 
 #define DRIVER_VERSION	"develop-v1.0.0"
 
@@ -41,10 +47,13 @@ static LIST_HEAD(logo_cache_list);
 #define MEMORY_POOL_SIZE CONFIG_RK_LCD_SIZE
 static unsigned long memory_start;
 static unsigned long memory_end;
+static unsigned long logo_stride_bytes(u32 width, u32 bpp);
 
 #ifdef CONFIG_RK_PWM_BL
 extern int rk_pwm_bl_config(int brightness);
 #endif
+extern uint32 SecureBootEn;
+extern uint32 SecureBootLock;
 
 /*
  * the phy types are used by different connectors in public.
@@ -67,12 +76,13 @@ struct public_phy_data {
 /* check which kind of public phy does connector use */
 static int check_public_use_phy(struct display_state *state)
 {
-	struct connector_state *conn_state = &state->conn_state;
-	int conn_node = conn_state->node;
-	const void *blob = state->blob;
 	int ret = NONE;
 
 #ifdef CONFIG_RKCHIP_INNO_HDMI_PHY
+	struct connector_state *conn_state = &state->conn_state;
+	int conn_node = conn_state->node;
+	const void *blob = state->blob;
+
 	if (!strncmp(fdt_get_name(blob, conn_node, NULL), "tve", 3) ||
 	!strncmp(fdt_get_name(blob, conn_node, NULL), "hdmi", 4))
 		ret = INNO_HDMI_PHY;
@@ -145,13 +155,31 @@ static void init_display_buffer(void)
 	memory_end = memory_start;
 }
 
-static void *get_display_buffer(int size)
+static int rockchip_calc_fb_size(u32 width, u32 height, u32 bpp,
+				 unsigned long *size)
+{
+	unsigned long stride;
+
+	if (!width || !height || !bpp || !size)
+		return -EINVAL;
+
+	stride = logo_stride_bytes(width, bpp);
+	if (!stride || height > (~0UL) / stride)
+		return -EOVERFLOW;
+
+	*size = stride * height;
+	return 0;
+}
+
+static void *get_display_buffer(unsigned long size)
 {
 	unsigned long roundup_memory = roundup(memory_end, PAGE_SIZE);
 	void *buf;
 
+	if (!size || size > MEMORY_POOL_SIZE)
+		return NULL;
 	if (roundup_memory + size > memory_start + MEMORY_POOL_SIZE) {
-		printf("failed to alloc %dbyte memory to display\n", size);
+		printf("failed to alloc %lu byte memory to display\n", size);
 		return NULL;
 	}
 	buf = (void *)roundup_memory;
@@ -169,6 +197,131 @@ static unsigned long get_display_size(void)
 static bool can_direct_logo(int bpp)
 {
 	return bpp == 24 || bpp == 32;
+}
+
+static unsigned long logo_stride_bytes(u32 width, u32 bpp)
+{
+	return ALIGN((unsigned long)width * bpp, 32) >> 3;
+}
+
+static void rockchip_rotate_logo(const struct logo_info *src, struct logo_info *dst,
+				 int rotate)
+{
+	const u8 *src_base = (const u8 *)src->mem + src->offset;
+	u8 *dst_base = (u8 *)dst->mem;
+	int bytespp = src->bpp >> 3;
+	int src_stride = logo_stride_bytes(src->width, src->bpp);
+	int dst_stride;
+	int x, y, phys_y;
+
+	if ((rotate != 90 && rotate != 270) || !bytespp)
+		return;
+
+	dst->width = src->height;
+	dst->height = src->width;
+	dst->bpp = src->bpp;
+	dst->mode = src->mode;
+	dst->rotate = rotate;
+	dst->ymirror = 0;
+	dst->offset = 0;
+
+	dst_stride = logo_stride_bytes(dst->width, dst->bpp);
+	if (!dst_base) {
+		dst_base = get_display_buffer(dst_stride * dst->height);
+		if (!dst_base) {
+			printf("failed to alloc rotated logo buffer\n");
+			memcpy(dst, src, sizeof(*dst));
+			return;
+		}
+	}
+
+	memset(dst_base, 0, dst_stride * dst->height);
+
+	for (y = 0; y < src->height; y++) {
+		phys_y = src->ymirror ? (src->height - 1 - y) : y;
+		for (x = 0; x < src->width; x++) {
+			int dst_x, dst_y;
+			const u8 *pixel = src_base + phys_y * src_stride + x * bytespp;
+			u8 *dst_pixel;
+
+			if (rotate == 90) {
+				dst_x = src->height - 1 - y;
+				dst_y = x;
+			} else {
+				dst_x = y;
+				dst_y = src->width - 1 - x;
+			}
+
+			dst_pixel = dst_base + dst_y * dst_stride + dst_x * bytespp;
+			memcpy(dst_pixel, pixel, bytespp);
+		}
+	}
+
+	dst->mem = (char *)dst_base;
+}
+
+static void rockchip_prepare_logo(struct logo_info *logo)
+{
+	struct logo_info rotated;
+
+	if (logo->rotate != 90 && logo->rotate != 270)
+		return;
+
+	memset(&rotated, 0, sizeof(rotated));
+	rockchip_rotate_logo(logo, &rotated, logo->rotate);
+	if (rotated.mem)
+		memcpy(logo, &rotated, sizeof(*logo));
+}
+
+static void rockchip_fill_argb8888(void *fb, int pixels, u32 color)
+{
+	u32 *dst = fb;
+	int i;
+
+	for (i = 0; i < pixels; i++)
+		dst[i] = color;
+}
+
+static void rockchip_recolor_logo(struct logo_info *logo)
+{
+	u8 *base = (u8 *)logo->mem + logo->offset;
+	int stride = logo_stride_bytes(logo->width, logo->bpp);
+	int x, y;
+
+	if (!base)
+		return;
+
+	for (y = 0; y < logo->height; y++) {
+		u8 *row = base + y * stride;
+
+		for (x = 0; x < logo->width; x++) {
+			u8 *pixel;
+			u8 r, g, b;
+
+			if (logo->bpp == 24) {
+				pixel = row + x * 3;
+				b = pixel[0];
+				g = pixel[1];
+				r = pixel[2];
+				if (r < 32 && g < 32 && b < 32) {
+					pixel[0] = 0xFF;
+					pixel[1] = 0xFF;
+					pixel[2] = 0xFF;
+				}
+			} else if (logo->bpp == 32) {
+				pixel = row + x * 4;
+				b = pixel[0];
+				g = pixel[1];
+				r = pixel[2];
+				if (r < 32 && g < 32 && b < 32) {
+					pixel[0] = 0xFF;
+					pixel[1] = 0xFF;
+					pixel[2] = 0xFF;
+					pixel[3] = 0xFF;
+				}
+			}
+		}
+	}
 }
 
 static int get_panel_node(struct display_state *state, int conn_node)
@@ -806,6 +959,9 @@ static int display_logo(struct display_state *state)
 	struct connector_state *conn_state = &state->conn_state;
 	struct logo_info *logo = &state->logo;
 	int hdisplay, vdisplay;
+	unsigned long fb_start;
+	unsigned long fb_size;
+	int ret;
 
 	display_init(state);
 	if (!state->is_init)
@@ -834,7 +990,7 @@ static int display_logo(struct display_state *state)
 	crtc_state->src_y = 0;
 	crtc_state->ymirror = logo->ymirror;
 
-	crtc_state->dma_addr = logo->mem + logo->offset;
+	crtc_state->dma_addr = (u32)(unsigned long)(logo->mem + logo->offset);
 	crtc_state->xvir = ALIGN(crtc_state->src_w * logo->bpp, 32) >> 5;
 
 	if (logo->mode == ROCKCHIP_DISPLAY_FULLSCREEN) {
@@ -860,10 +1016,20 @@ static int display_logo(struct display_state *state)
 		}
 	}
 
-	display_set_plane(state);
-	display_enable(state);
+	ret = rockchip_calc_fb_size(crtc_state->src_w, crtc_state->src_h,
+				    logo->bpp, &fb_size);
+	if (ret)
+		return ret;
 
-	return 0;
+	fb_start = (unsigned long)crtc_state->dma_addr;
+	flush_dcache_range(fb_start,
+			   ALIGN(fb_start + fb_size, ARCH_DMA_MINALIGN));
+
+	ret = display_set_plane(state);
+	if (ret)
+		return ret;
+
+	return display_enable(state);
 }
 
 static int get_crtc_id(const void *blob, int connect)
@@ -912,12 +1078,12 @@ static int find_connector_node(const void *blob, int node)
 					    nodedepth - 3, NULL);
 }
 
-struct rockchip_logo_cache *find_or_alloc_logo_cache(const char *bmp)
+struct rockchip_logo_cache *find_or_alloc_logo_cache(const char *bmp, u32 rotate)
 {
 	struct rockchip_logo_cache *tmp, *logo_cache = NULL;
 
 	list_for_each_entry(tmp, &logo_cache_list, head) {
-		if (!strcmp(tmp->name, bmp)) {
+		if (!strcmp(tmp->name, bmp) && tmp->logo.rotate == rotate) {
 			logo_cache = tmp;
 			break;
 		}
@@ -930,7 +1096,11 @@ struct rockchip_logo_cache *find_or_alloc_logo_cache(const char *bmp)
 			return NULL;
 		}
 		memset(logo_cache, 0, sizeof(*logo_cache));
-		strcpy(logo_cache->name, bmp);
+		logo_cache->name = strdup(bmp);
+		if (!logo_cache->name) {
+			free(logo_cache);
+			return NULL;
+		}
 		INIT_LIST_HEAD(&logo_cache->head);
 		list_add_tail(&logo_cache->head, &logo_cache_list);
 	}
@@ -943,16 +1113,20 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	struct rockchip_logo_cache *logo_cache;
 	struct bmp_header *header;
 	void *dst = NULL, *pdst;
-	int size;
+	unsigned long size;
+	unsigned long dst_size;
+	u32 data_offset;
+	int ret;
 
 	if (!logo || !bmp_name)
 		return -EINVAL;
-	logo_cache = find_or_alloc_logo_cache(bmp_name);
+	logo_cache = find_or_alloc_logo_cache(bmp_name, logo->rotate);
 	if (!logo_cache)
 		return -ENOMEM;
 
 	if (logo_cache->logo.mem) {
 		memcpy(logo, &logo_cache->logo, sizeof(*logo));
+		logo->mode = logo_cache->logo.mode;
 		return 0;
 	}
 
@@ -964,6 +1138,13 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 	logo->width = get_unaligned_le32(&header->width);
 	logo->height = get_unaligned_le32(&header->height);
 	size = get_unaligned_le32(&header->file_size);
+	data_offset = get_unaligned_le32(&header->data_offset);
+	if (!size || size < sizeof(*header) || !logo->width || !logo->height)
+		return -EINVAL;
+	if (logo->width > INT_MAX || logo->height > INT_MAX)
+		return -EOVERFLOW;
+	if (data_offset >= size)
+		return -EINVAL;
 	if (!can_direct_logo(logo->bpp)) {
 		if (size > CONFIG_RK_BOOT_BUFFER_SIZE) {
 			printf("failed to use boot buf as temp bmp buffer\n");
@@ -978,31 +1159,36 @@ static int load_bmp_logo(struct logo_info *logo, const char *bmp_name)
 
 	if (load_bmp_content(bmp_name, pdst, size)) {
 		printf("failed to load bmp %s\n", bmp_name);
-		return 0;
+		return -EINVAL;
 	}
 
 	if (!can_direct_logo(logo->bpp)) {
-		int dst_size;
 		/*
 		 * TODO: force use 16bpp if bpp less than 16;
 		 */
 		logo->bpp = (logo->bpp <= 16) ? 16 : logo->bpp;
-		dst_size = logo->width * logo->height * logo->bpp >> 3;
+		ret = rockchip_calc_fb_size(logo->width, logo->height, logo->bpp,
+					    &dst_size);
+		if (ret)
+			return ret;
 
 		dst = get_display_buffer(dst_size);
 		if (!dst)
 			return -ENOMEM;
 		if (bmpdecoder(pdst, dst, logo->bpp)) {
 			printf("failed to decode bmp %s\n", bmp_name);
-			return 0;
+			return -EINVAL;
 		}
 		logo->offset = 0;
 		logo->ymirror = 0;
 	} else {
-		logo->offset = get_unaligned_le32(&header->data_offset);
+		logo->offset = data_offset;
 		logo->ymirror = 1;
 	}
-	logo->mem = (u32)(unsigned long)dst;
+
+	logo->mem = dst;
+	rockchip_recolor_logo(logo);
+	rockchip_prepare_logo(logo);
 
 	memcpy(&logo_cache->logo, logo, sizeof(*logo));
 
@@ -1021,11 +1207,377 @@ void rockchip_show_bmp(const char *bmp)
 
 	list_for_each_entry(s, &rockchip_display_list, head) {
 		s->logo.mode = s->charge_logo_mode;
+		s->logo.rotate = s->rotate;
 		if (load_bmp_logo(&s->logo, bmp))
 			continue;
 		display_logo(s);
 	}
 }
+
+#ifndef CONFIG_LCD_CONSOLE_DISABLE
+/* Persistent framebuffer for post-splash updates (e.g. fastboot screen) */
+static void *g_splash_fb;
+static void *g_splash_scanout_fb;
+static int g_splash_fb_w;
+static int g_splash_fb_h;
+static int g_splash_scanout_w;
+static int g_splash_scanout_h;
+static u32 g_splash_rotate;
+static struct display_state *g_splash_state;
+
+static void rockchip_flush_logo_buffer(void *fb, int w, int h, int bpp)
+{
+	unsigned long start = (unsigned long)fb;
+	unsigned long size;
+
+	if (!fb || w <= 0 || h <= 0 || !bpp)
+		return;
+
+	size = (unsigned long)logo_stride_bytes(w, bpp) * h;
+	flush_dcache_range(start, ALIGN(start + size, ARCH_DMA_MINALIGN));
+}
+
+static void rockchip_refresh_splash(struct display_state *s)
+{
+	struct logo_info logical_logo;
+
+	if (!g_splash_fb || g_splash_fb_w <= 0 || g_splash_fb_h <= 0)
+		return;
+
+	if (g_splash_rotate == 90 || g_splash_rotate == 270) {
+		memset(&logical_logo, 0, sizeof(logical_logo));
+		logical_logo.mem = g_splash_fb;
+		logical_logo.width = g_splash_fb_w;
+		logical_logo.height = g_splash_fb_h;
+		logical_logo.bpp = 32;
+		logical_logo.rotate = g_splash_rotate;
+		s->logo.mem = g_splash_scanout_fb;
+		rockchip_rotate_logo(&logical_logo, &s->logo, g_splash_rotate);
+		if (!s->logo.mem)
+			return;
+		rockchip_flush_logo_buffer(g_splash_scanout_fb,
+					   g_splash_scanout_w,
+					   g_splash_scanout_h, 32);
+	} else {
+		rockchip_flush_logo_buffer(g_splash_fb, g_splash_fb_w,
+					   g_splash_fb_h, 32);
+	}
+}
+
+static void rockchip_draw_text_line(void *fb, int fb_w, int fb_h,
+				    int x, int y, const char *text, u32 color)
+{
+	u32 *pixels = (u32 *)fb;
+	int row, col;
+
+	while (*text && x < fb_w) {
+		unsigned char c = (unsigned char)*text++;
+		const unsigned char *glyph =
+			video_fontdata + c * VIDEO_FONT_HEIGHT;
+
+		for (row = 0; row < VIDEO_FONT_HEIGHT && (y + row) < fb_h;
+		     row++) {
+			unsigned char bits = glyph[row];
+
+			for (col = 0; col < VIDEO_FONT_WIDTH &&
+			     (x + col) < fb_w; col++) {
+				if (bits & (0x80 >> col))
+					pixels[(y + row) * fb_w + (x + col)] =
+						color;
+			}
+		}
+		x += VIDEO_FONT_WIDTH;
+	}
+}
+
+static int rockchip_prepare_splash_fb(struct display_state *s, bool display_now)
+{
+	struct connector_state *conn_state = &s->conn_state;
+	int w, h;
+	unsigned long size;
+	unsigned long scanout_size;
+	void *fb;
+
+	display_init(s);
+	if (!s->is_init) {
+		printf("rockchip_prepare_splash_fb: display_init failed\n");
+		return -ENODEV;
+	}
+
+	w = conn_state->mode.hdisplay;
+	h = conn_state->mode.vdisplay;
+	if (s->rotate == 90 || s->rotate == 270) {
+		int tmp = w;
+		w = h;
+		h = tmp;
+	}
+	if (w <= 0 || h <= 0)
+		return -EINVAL;
+
+	if (rockchip_calc_fb_size(w, h, 32, &size))
+		return -EOVERFLOW;
+	fb = get_display_buffer(size);
+	if (!fb) {
+		printf("rockchip_prepare_splash_fb: get_display_buffer(%lu) failed\n",
+		       size);
+		return -ENOMEM;
+	}
+	rockchip_fill_argb8888(fb, w * h, 0xFF000000); /* opaque black background */
+
+	s->logo.mode = ROCKCHIP_DISPLAY_FULLSCREEN;
+	s->logo.bpp = 32;
+	s->logo.width = w;
+	s->logo.height = h;
+	s->logo.mem = (char *)(unsigned long)fb;
+	s->logo.offset = 0;
+	s->logo.ymirror = 0;
+	s->logo.rotate = s->rotate;
+	g_splash_rotate = s->rotate;
+	if (s->rotate == 90 || s->rotate == 270) {
+		if (rockchip_calc_fb_size(conn_state->mode.hdisplay,
+					  conn_state->mode.vdisplay, 32,
+					  &scanout_size))
+			return -EOVERFLOW;
+		g_splash_scanout_fb = get_display_buffer(scanout_size);
+		if (!g_splash_scanout_fb) {
+			printf("rockchip_prepare_splash_fb: get_display_buffer(scanout) failed\n");
+			return -ENOMEM;
+		}
+		g_splash_scanout_w = conn_state->mode.hdisplay;
+		g_splash_scanout_h = conn_state->mode.vdisplay;
+	} else {
+		g_splash_scanout_fb = fb;
+		g_splash_scanout_w = w;
+		g_splash_scanout_h = h;
+	}
+
+	/* Store for later updates (fastboot screen) */
+	g_splash_fb = fb;
+	g_splash_fb_w = w;
+	g_splash_fb_h = h;
+	g_splash_state = s;
+
+	if (display_now) {
+		rockchip_refresh_splash(s);
+		display_logo(s);
+	}
+
+	return 0;
+}
+
+static void rockchip_show_splash(struct display_state *s)
+{
+	int cx, cy;
+
+	if (rockchip_prepare_splash_fb(s, false))
+		return;
+
+	/* "LHC Rocks" centered */
+	cx = (g_splash_fb_w - (int)strlen("LHC Rocks") * VIDEO_FONT_WIDTH) / 2;
+	cy = g_splash_fb_h / 2 - VIDEO_FONT_HEIGHT;
+	if (cx < 0) cx = 0;
+	if (cy < 0) cy = 0;
+	rockchip_draw_text_line(g_splash_fb, g_splash_fb_w, g_splash_fb_h,
+				cx, cy, "LHC Rocks", 0xFFFFFFFF);
+
+	/* U-Boot version below */
+	cx = (g_splash_fb_w - (int)strlen(U_BOOT_VERSION) * VIDEO_FONT_WIDTH) / 2;
+	cy += VIDEO_FONT_HEIGHT * 2;
+	if (cx < 0) cx = 0;
+	rockchip_draw_text_line(g_splash_fb, g_splash_fb_w, g_splash_fb_h,
+				cx, cy, U_BOOT_VERSION, 0xFF808080);
+
+	rockchip_refresh_splash(s);
+	display_logo(s);
+}
+
+#ifndef CONFIG_LCD_CONSOLE_DISABLE
+static const char *rockchip_fastboot_unlocked_state(void)
+{
+	char *env = getenv(FASTBOOT_UNLOCKED_ENV_NAME);
+
+	return (env && !strcmp(env, "1")) ? "unlocked" : "locked";
+}
+
+static const char *rockchip_boot_media_name(uint16 media)
+{
+	switch (media) {
+	case BOOT_FROM_FLASH:
+		return "nand";
+	case BOOT_FROM_EMMC:
+		return "emmc";
+	case BOOT_FROM_SD0:
+		return "sdcard";
+	case BOOT_FROM_SD1:
+		return "sdcard1";
+	case BOOT_FROM_SPI:
+		return "spi";
+	case BOOT_FROM_UMS:
+		return "usb-ums";
+	case BOOT_FROM_NVME:
+		return "nvme";
+	default:
+		return "unknown";
+	}
+}
+
+static const char *rockchip_reboot_reason_name(enum fbt_reboot_type reboot_type)
+{
+	switch (reboot_type) {
+	case FASTBOOT_REBOOT_NORMAL:
+		return "normal";
+	case FASTBOOT_REBOOT_BOOTLOADER:
+		return "bootloader";
+	case FASTBOOT_REBOOT_RECOVERY:
+		return "recovery";
+	case FASTBOOT_REBOOT_RECOVERY_WIPE_DATA:
+		return "recovery-wipe";
+	case FASTBOOT_REBOOT_NORECOVER:
+		return "no-recover";
+	case FASTBOOT_REBOOT_FASTBOOT:
+		return "fastboot";
+	case FASTBOOT_REBOOT_CHARGE:
+		return "charge";
+	case FASTBOOT_REBOOT_UNKNOWN:
+	default:
+		return "cold-boot";
+	}
+}
+
+static const char *rockchip_soc_name(void)
+{
+#ifdef CONFIG_RKCHIP_RK3288
+	return "RK3288";
+#else
+	return "Rockchip";
+#endif
+}
+#endif
+
+void rockchip_show_fastboot_screen(const char *serial, const char *product,
+				   const char *bootloader,
+				   enum fbt_reboot_type reboot_type)
+{
+	char line[96];
+	int y, x, lw;
+	const int SCALE = 2; /* font scale factor (pixels per font pixel) */
+	void *fb;
+	int w, h;
+	const char *unlocked;
+	const char *secure_state;
+	const char *media_name;
+	const char *reason_name;
+	const char *header = "FASTBOOT MODE";
+
+	if ((!g_splash_fb || g_splash_fb_w <= 0 || g_splash_fb_h <= 0) &&
+	    !list_empty(&rockchip_display_list) &&
+	    rockchip_prepare_splash_fb(list_first_entry(&rockchip_display_list,
+							struct display_state,
+							head), false))
+		return;
+
+	fb = g_splash_fb;
+	w = g_splash_fb_w;
+	h = g_splash_fb_h;
+
+	if (!fb || w <= 0 || h <= 0)
+		return;
+
+	rockchip_fill_argb8888(fb, w * h, 0xFF000000); /* opaque black background */
+	unlocked = rockchip_fastboot_unlocked_state();
+	secure_state = SecureBootEn ? (SecureBootLock ? "enabled, locked" :
+					"enabled, unlocked") : "disabled";
+	media_name = rockchip_boot_media_name(StorageGetBootMedia());
+	reason_name = rockchip_reboot_reason_name(reboot_type);
+
+	/* Header */
+	y = h / 8;
+	lw = strlen(header) * VIDEO_FONT_WIDTH;
+	x = (w - lw * SCALE) / 2;
+	if (x < 0) x = 4;
+	/* Draw at 2x scale by writing each glyph pixel as 2x2 block */
+	{
+		u32 *pixels = (u32 *)fb;
+		const char *hdr = header;
+		int row, col, px, py;
+		int sx = x;
+
+		while (*hdr) {
+			unsigned char c = (unsigned char)*hdr++;
+			const unsigned char *glyph =
+				video_fontdata + c * VIDEO_FONT_HEIGHT;
+
+			for (row = 0; row < VIDEO_FONT_HEIGHT; row++) {
+				unsigned char bits = glyph[row];
+
+				for (col = 0; col < VIDEO_FONT_WIDTH; col++) {
+					if (bits & (0x80 >> col)) {
+						for (py = 0; py < SCALE; py++)
+						for (px = 0; px < SCALE; px++) {
+							int fy = y + row * SCALE + py;
+							int fx = sx + col * SCALE + px;
+							if (fy < h && fx < w)
+								pixels[fy * w + fx] = 0xFF00AAFF;
+						}
+					}
+				}
+			}
+			sx += VIDEO_FONT_WIDTH * SCALE;
+		}
+	}
+
+	y = h / 8 + VIDEO_FONT_HEIGHT * SCALE + 16;
+	x = 24;
+
+	rockchip_draw_text_line(fb, w, h, x, y, "Android Fastboot", 0xFF00AAFF);
+	y += VIDEO_FONT_HEIGHT + 6;
+
+	snprintf(line, sizeof(line), "Product:    %s", product ? product : "unknown");
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	snprintf(line, sizeof(line), "Bootloader: %s", bootloader ? bootloader : "unknown");
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	snprintf(line, sizeof(line), "Serial:     %s", serial ? serial : "unknown");
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	snprintf(line, sizeof(line), "Device:     %s", unlocked);
+	rockchip_draw_text_line(fb, w, h, x, y, line,
+				!strcmp(unlocked, "unlocked") ? 0xFF00FF00 : 0xFFFFC857);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	snprintf(line, sizeof(line), "Secure:     %s", secure_state);
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 10;
+
+	rockchip_draw_text_line(fb, w, h, x, y, "Rockchip Details", 0xFF7FB3FF);
+	y += VIDEO_FONT_HEIGHT + 6;
+
+	snprintf(line, sizeof(line), "SoC:        %s", rockchip_soc_name());
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	snprintf(line, sizeof(line), "Boot media: %s", media_name);
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	snprintf(line, sizeof(line), "Reason:     %s", reason_name);
+	rockchip_draw_text_line(fb, w, h, x, y, line, 0xFFFFFFFF);
+	y += VIDEO_FONT_HEIGHT + 4;
+
+	y += VIDEO_FONT_HEIGHT + 8;
+
+	rockchip_draw_text_line(fb, w, h, x, y,
+				"Waiting for fastboot commands...", 0xFFAAAAAA);
+	if (g_splash_state)
+		rockchip_refresh_splash(g_splash_state);
+	if (g_splash_state)
+		display_logo(g_splash_state);
+}
+#endif /* CONFIG_LCD_CONSOLE_DISABLE */
 
 void rockchip_show_logo(void)
 {
@@ -1033,10 +1585,14 @@ void rockchip_show_logo(void)
 
 	list_for_each_entry(s, &rockchip_display_list, head) {
 		s->logo.mode = s->logo_mode;
-		if (load_bmp_logo(&s->logo, s->ulogo_name))
-			printf("failed to display uboot logo\n");
-		else
+		s->logo.rotate = s->rotate;
+		if (load_bmp_logo(&s->logo, s->ulogo_name)) {
+#ifndef CONFIG_LCD_CONSOLE_DISABLE
+			rockchip_show_splash(s);
+#endif
+		} else {
 			display_logo(s);
+		}
 		if (load_bmp_logo(&s->logo, s->klogo_name))
 			printf("failed to display kernel logo\n");
 	}
@@ -1136,6 +1692,7 @@ int rockchip_display_init(void)
 			s->charge_logo_mode = ROCKCHIP_DISPLAY_FULLSCREEN;
 		else
 			s->charge_logo_mode = ROCKCHIP_DISPLAY_CENTER;
+		s->rotate = fdtdec_get_int(blob, child, "logo,rotate", 0);
 
 		s->blob = blob;
 		s->conn_state.node = conn_node;
@@ -1224,12 +1781,13 @@ void rockchip_display_fixup(void *blob)
 #define FDT_SET_U32(name, val) \
 		do_fixup_by_path_u32(blob, path, name, val, 1);
 
-		offset = s->logo.offset + s->logo.mem - memory_start;
+		offset = s->logo.offset + (unsigned long)s->logo.mem - memory_start;
 		FDT_SET_U32("logo,offset", offset);
 		FDT_SET_U32("logo,width", s->logo.width);
 		FDT_SET_U32("logo,height", s->logo.height);
 		FDT_SET_U32("logo,bpp", s->logo.bpp);
 		FDT_SET_U32("logo,ymirror", s->logo.ymirror);
+		FDT_SET_U32("logo,rotate", s->rotate);
 		FDT_SET_U32("video,hdisplay", s->conn_state.mode.hdisplay);
 		FDT_SET_U32("video,vdisplay", s->conn_state.mode.vdisplay);
 		FDT_SET_U32("video,crtc_hsync_end", s->conn_state.mode.crtc_hsync_end);
