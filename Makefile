@@ -195,6 +195,13 @@ endif
 
 else
 
+ifneq ($(wildcard $(shell pwd)/toolchain/arm-eabi-4.9),)
+CROSS_COMPILE   ?= $(shell pwd)/toolchain/arm-eabi-4.9/bin/arm-eabi-
+endif
+ifneq ($(wildcard $(shell pwd)/toolchain/arm-eabi-4.8),)
+CROSS_COMPILE   ?= $(shell pwd)/toolchain/arm-eabi-4.8/bin/arm-eabi-
+endif
+
 ifneq ($(wildcard ../toolchain/arm-eabi-4.8),)
 CROSS_COMPILE   ?= $(shell pwd)/../toolchain/arm-eabi-4.8/bin/arm-eabi-
 endif
@@ -231,7 +238,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = cc
 HOSTCXX      = c++
-HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer
+HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer -DLIBFDT_ENV_H -DLIBFDT_H
 HOSTCXXFLAGS = -O2
 
 ifeq ($(HOSTOS),cygwin)
@@ -979,6 +986,24 @@ else
 endif # CONFIG_SECOND_LEVEL_BOOTLOADER
 
 endif # CONFIG_ROCKCHIP
+
+# Philips RK3288 flash package
+# Collects all files needed to flash the device via RKDevTool into flash_package/
+PHILIPS_BOARD_DIR := board/rockchip/rk32xx/philips
+philips-package: RKLoader_uboot.bin
+	$(Q)mkdir -p flash_package
+	$(Q)cp rk3288_loader_v1.08.254.bin flash_package/MiniLoaderAll.bin
+	$(Q)cp uboot.img flash_package/uboot.img
+	$(Q)cp trust.img flash_package/trust.img
+	$(Q)cp $(PHILIPS_BOARD_DIR)/parameter.txt flash_package/parameter.txt
+	@echo ""
+	@echo "=========================================="
+	@echo " Philips RK3288 flash package ready:"
+	@echo "   flash_package/MiniLoaderAll.bin  -> Loader (0x0)"
+	@echo "   flash_package/parameter.txt      -> Parameter"
+	@echo "   flash_package/uboot.img          -> uboot (0x2000)"
+	@echo "   flash_package/trust.img          -> trust (0x4000)"
+	@echo "=========================================="
 
 #
 # U-Boot entry point, needed for booting of full-blown U-Boot

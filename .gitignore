@@ -86,3 +86,7 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# Local-only directories that should never be committed
+/flash_package/
+/toolchain/
